@@ -11,21 +11,20 @@ COLOR_BLUE = "\033[1;34m"
 COLOR_WHITE = "\033[1;37m"
 LOGFILE = ""
 
-# amount is the amount of coin, not the amount of usd
+# amount is the amount of token, not the amount of usd
 config = json.dumps({
     "apiKey": "",
     "secret": "",
     "sub_account": "",
     "symbol": "",
     "grid_number": ,
-    "lower_price":,
+    "lower_price": ,
     "upper_price": ,
     "amount": ,
     'stoploss': ,
     'side': ''})
 
 config = json.loads(config)
-
 
 exchange = ccxt.ftx({
     'verbose': False,
@@ -57,14 +56,14 @@ class Grid_trader:
         self.grid_number = grid_number
         self.upper_price = upper_price
         self.lower_price = lower_price
-        self.totalamount = amount
+        self.totalamount = float(amount)
         self.inteval_profit = (self.upper_price - self.lower_price) / self.grid_number
         self.stop = stop
         self.side = side
         self.amount = 0
+
         pass
 
-    #place orders for initial grids
     def place_order_init(self):
         # start cal level and place grid oreder
         for i in range(self.grid_number + 1):  # n+1 lines make n grid
@@ -79,7 +78,6 @@ class Grid_trader:
                 log("place sell order id = " + str(order.id) + " in " + str(price))
             self.order_list.append(order)
 
-     #calculate the amount of the initial market order and excute the order
     def form_initial_balance(self):
         current_price  =self.exchange.fetch_ticker(self.symbol)['ask']
         if self.side == 'long':
@@ -91,7 +89,6 @@ class Grid_trader:
         else:
             pass
 
-    #place a new order in case a placed order is hit
     def loop_job(self):
         for order in self.order_list:
             order_info = self.send_request("get_order", order.id)
@@ -113,7 +110,6 @@ class Grid_trader:
                 msg = msg + " order id : " + str(order.id) + " : " + str(new_order_price)
                 log(msg)
 
-    # check whether the loss is big enough for stop loss
     def check_liquidation(self):
         (pnl, amount, direction) = self.send_request('get_pnl')
         liquidation = pnl < - self.stop
@@ -124,11 +120,10 @@ class Grid_trader:
                 log('stoploss')
                 exit()
             else:
-                self.exchange.createMarketBuyOrder(self.symbol, amount)
+                self.exchange.createMarketBuyOrder(self.symbol, -float(amount))
                 log('stoploss')
                 exit()
-                
-                
+
     def send_request(self, task, input1=None, input2=None):
         tries = 3
         for i in range(tries):
@@ -180,7 +175,7 @@ class Grid_trader:
                     raise
             break
 
-# print messages
+
 def log(msg):
     timestamp = datetime.datetime.now().strftime("%b %d %Y %H:%M:%S ")
     s = "[%s] %s:%s %s" % (timestamp, COLOR_WHITE, COLOR_RESET, msg)
@@ -197,4 +192,4 @@ while True:
     print("Loop in :", datetime.datetime.now())
     main_job.check_liquidation()
     main_job.loop_job()
-    time.sleep(1)
+    time.sleep(0.5)
